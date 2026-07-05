@@ -12,7 +12,8 @@
   <a href="https://mage-obsidian.jeanmarcos.dev/">📚 Documentation</a> ·
   <a href="https://mage-obsidian-demo.jeanmarcos.dev/">🚀 Live demo</a> ·
   <a href="https://mage-obsidian.jeanmarcos.dev/getting-started/requirements/">⚡ Getting started</a> ·
-  <a href="https://github.com/mage-obsidian/module-modern-frontend/discussions">💬 Discussions</a>
+  <a href="https://github.com/mage-obsidian/module-modern-frontend/discussions">💬 Discussions</a> ·
+  <a href="https://discord.gg/bfeVCZt4Us">🎮 Discord</a>
 </p>
 
 ---
@@ -67,6 +68,7 @@ Full instructions in the [installation guide](https://mage-obsidian.jeanmarcos.d
 ## Community
 
 - 💬 [GitHub Discussions](https://github.com/mage-obsidian/module-modern-frontend/discussions) — questions, ideas, show &amp; tell
+- 🎮 [Discord](https://discord.gg/bfeVCZt4Us) — chat with the community
 - 🐛 Issues on each repository — bug reports with templates
 - 🤝 [Contributing guide](https://mage-obsidian.jeanmarcos.dev/support/)
 - ❤️ [Support the project](https://ko-fi.com/Q5Q816Z9WN)
