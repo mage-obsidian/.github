@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Questions & ideas
+    url: https://github.com/mage-obsidian/module-modern-frontend/discussions
+    about: Ask questions and discuss ideas in GitHub Discussions.
+  - name: 📚 Documentation
+    url: https://mage-obsidian.jeanmarcos.dev/
+    about: Guides, installation and reference.
