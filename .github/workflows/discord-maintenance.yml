@@ -1,0 +1,41 @@
+name: Discord maintenance
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+    inputs:
+      tasks:
+        description: Comma-separated tasks (publish, help, archive, contributors)
+        required: false
+        default: publish,help,archive
+      dry_run:
+        description: Plan only, change nothing
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discord-maintenance
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: discord
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node discord/src/maintain.mjs
+        env:
+          TASKS: ${{ github.event.schedule == '17 9 * * *' && 'contributors' || inputs.tasks }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          DISCORD_AUTOMATION_TOKEN: ${{ secrets.DISCORD_AUTOMATION_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}

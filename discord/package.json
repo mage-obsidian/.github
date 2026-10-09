@@ -10,6 +10,7 @@
     "announce": "node src/announce-release.mjs",
     "plan": "node src/apply.mjs",
     "apply": "node src/apply.mjs --apply",
+    "maintain": "node src/maintain.mjs",
     "format": "npx --yes prettier@3.9.4 --write .",
     "format:check": "npx --yes prettier@3.9.4 --check ."
   }

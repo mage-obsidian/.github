@@ -46,6 +46,37 @@ npm run apply -- --prune  # also delete channels and roles the blueprint does no
 The URLs of the webhooks it creates are written to `~/.config/mage-obsidian/discord-webhooks.json`
 (mode 600), never to the terminal.
 
+The server icon is [`assets/icon.svg`](assets/icon.svg), rendered to `assets/icon.png`
+(`rsvg-convert -w 512 -h 512 assets/icon.svg -o assets/icon.png`). `apply` uploads it when the
+server, the bot or a webhook has no image yet; `--force-icon` replaces them after a redesign.
+
+## Automation
+
+[`discord-maintenance.yml`](../.github/workflows/discord-maintenance.yml) runs a second bot,
+`MageObsidian Automation`, every 15 minutes. It has no Administrator and its role sits below
+`Maintainer`, so its token cannot grant `Maintainer` or delete anything structural.
+
+| Task           | What it does                                                                   |
+| -------------- | ------------------------------------------------------------------------------ |
+| `publish`      | Publishes new `#announcements` messages to the servers that follow the channel |
+| `help`         | Answers each new `#help` post with the checklist and pings `@Helpers`          |
+| `archive`      | Archives posts tagged ✅ solved after 24 hours without activity                |
+| `contributors` | Once a day, gives `Contributor` to mapped people with a merged pull request    |
+
+Its token is the `DISCORD_AUTOMATION_TOKEN` secret of this repository. Preview a run with
+`DISCORD_AUTOMATION_TOKEN=… TASKS=publish,help,archive DRY_RUN=1 npm run maintain`.
+
+### Contributors
+
+[`contributors.json`](contributors.json) maps GitHub logins to Discord user ids:
+
+```json
+{ "octocat": "123456789012345678" }
+```
+
+A maintainer adds the entry; the daily run gives the role once that login has a merged pull
+request anywhere in `mage-obsidian`.
+
 ## Development
 
 ```bash
