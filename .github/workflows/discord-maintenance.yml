@@ -26,14 +26,21 @@ jobs:
   maintain:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      HAS_TOKEN: ${{ secrets.DISCORD_AUTOMATION_TOKEN != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::DISCORD_AUTOMATION_TOKEN is not set; nothing to maintain."
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/checkout@v4
         with:
           sparse-checkout: discord
-      - uses: actions/setup-node@v4
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node discord/src/maintain.mjs
+      - if: env.HAS_TOKEN == 'true'
+        run: node discord/src/maintain.mjs
         env:
           TASKS: ${{ github.event.schedule == '17 9 * * *' && 'contributors' || inputs.tasks }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
