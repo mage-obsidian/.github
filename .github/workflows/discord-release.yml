@@ -1,0 +1,42 @@
+name: Discord release announcement
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to announce
+        required: true
+        type: string
+      ping_role_id:
+        description: Discord role to mention, empty for no mention
+        required: false
+        type: string
+        default: ''
+    secrets:
+      DISCORD_RELEASES_WEBHOOK:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  announce:
+    name: Announce ${{ inputs.tag }} on Discord
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: mage-obsidian/.github
+          ref: main
+          path: org
+          sparse-checkout: discord
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node org/discord/src/announce-release.mjs
+        env:
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          GITHUB_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}
+          DISCORD_RELEASE_ROLE_ID: ${{ inputs.ping_role_id }}
