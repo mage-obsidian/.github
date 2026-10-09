@@ -72,7 +72,8 @@ export function fakeDiscord(state) {
   const guildPath = `/guilds/${state.guild.id}`;
 
   const routes = [
-    ['GET', /^\/users\/@me$/, () => ({ id: BOT_ID })],
+    ['GET', /^\/users\/@me$/, () => ({ id: BOT_ID, avatar: state.botAvatar ?? null })],
+    ['PATCH', /^\/users\/@me$/, (_, body) => (state.botAvatar = body.avatar)],
     ['GET', new RegExp(`^${guildPath}$`), () => state.guild],
     ['PATCH', new RegExp(`^${guildPath}$`), (_, body) => Object.assign(state.guild, body)],
     ['GET', new RegExp(`^${guildPath}/roles$`), () => state.roles],
@@ -89,9 +90,16 @@ export function fakeDiscord(state) {
       'PATCH',
       new RegExp(`^${guildPath}/roles$`),
       (_, positions) => {
-        for (const { id, position } of positions) {
-          state.roles.find((role) => role.id === id).position = position;
+        const next = new Map(state.roles.map((role) => [role.id, role.position]));
+        for (const { id, position } of positions) next.set(id, position);
+        const botPosition = next.get(BOT_ROLE);
+        const climbing = positions.filter(
+          ({ id, position }) => id !== BOT_ROLE && position >= botPosition,
+        );
+        if (climbing.length) {
+          throw Object.assign(new Error('Missing Permissions'), { status: 400 });
         }
+        for (const role of state.roles) role.position = next.get(role.id);
         return state.roles;
       },
     ],
@@ -236,6 +244,15 @@ export function fakeDiscord(state) {
       ([id], body) =>
         Object.assign(
           state.automod.find((rule) => rule.id === id),
+          body,
+        ),
+    ],
+    [
+      'PATCH',
+      /^\/webhooks\/([^/]+)$/,
+      ([id], body) =>
+        Object.assign(
+          state.webhooks.find((hook) => hook.id === id),
           body,
         ),
     ],

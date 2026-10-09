@@ -38,7 +38,16 @@ function snowflakeFactory() {
   return () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + sequence++);
 }
 
-export async function run({ api, blueprint = defaultBlueprint, dryRun, prune, log, saveSecrets }) {
+export async function run({
+  api,
+  blueprint = defaultBlueprint,
+  dryRun,
+  prune,
+  forceIcon = false,
+  iconDataUri,
+  log,
+  saveSecrets,
+}) {
   const guildPath = `/guilds/${blueprint.guildId}`;
   const write = async (method, path, body, summary, placeholder) => {
     log(`${dryRun ? '[plan]' : '[apply]'} ${summary}`);
@@ -69,6 +78,11 @@ export async function run({ api, blueprint = defaultBlueprint, dryRun, prune, lo
   const roleIds = {};
   for (const desired of blueprint.roles) {
     const existing = roleMatch.matched[desired.key];
+    if (desired.managed) {
+      if (existing) roleIds[desired.key] = existing.id;
+      else log(`[wait] the "${desired.managed}" bot is not in the server yet; its role is skipped`);
+      continue;
+    }
     if (!existing) {
       const created = await write(
         'post',
@@ -98,7 +112,10 @@ export async function run({ api, blueprint = defaultBlueprint, dryRun, prune, lo
     await write(
       'patch',
       `${guildPath}/roles`,
-      rolePositions(blueprint.roles, roleIds),
+      rolePositions(currentRoles, blueprint.roles, roleIds, {
+        guildId: blueprint.guildId,
+        botRoleIds: member.roles,
+      }),
       'reorder roles',
     );
   }
@@ -153,6 +170,13 @@ export async function run({ api, blueprint = defaultBlueprint, dryRun, prune, lo
         `update channel ${desired.name} (${Object.keys(patch).join(', ')})`,
       );
     }
+  }
+
+  if (iconDataUri && (forceIcon || !me.avatar)) {
+    await write('patch', '/users/@me', { avatar: iconDataUri }, 'set the bot avatar');
+  }
+  if (iconDataUri && (forceIcon || !guild.icon)) {
+    await write('patch', guildPath, { icon: iconDataUri }, 'set the server icon');
   }
 
   const desiredGuild = guildBody(blueprint.guild, channelIds, guild.features);
@@ -319,9 +343,17 @@ export async function run({ api, blueprint = defaultBlueprint, dryRun, prune, lo
       (await write(
         'post',
         `/channels/${channelId}/webhooks`,
-        { name: hook.name },
+        { name: hook.name, ...(iconDataUri ? { avatar: iconDataUri } : {}) },
         `create webhook "${hook.name}" in #${hook.channel}`,
       ));
+    if (existing && iconDataUri && (forceIcon || !existing.avatar)) {
+      await write(
+        'patch',
+        `/webhooks/${existing.id}`,
+        { avatar: iconDataUri },
+        `set the avatar of webhook "${hook.name}"`,
+      );
+    }
     if (webhook?.token)
       secrets[hook.secret] = `https://discord.com/api/webhooks/${webhook.id}/${webhook.token}`;
   }
@@ -337,6 +369,10 @@ async function saveSecretsFile(secrets) {
   await chmod(SECRETS_FILE, 0o600);
 }
 
+async function readIcon(url) {
+  return `data:image/png;base64,${(await readFile(url)).toString('base64')}`;
+}
+
 async function readToken(env) {
   if (env.DISCORD_BOT_TOKEN?.trim()) return env.DISCORD_BOT_TOKEN.trim();
   try {
@@ -348,12 +384,14 @@ async function readToken(env) {
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const args = new Set(process.argv.slice(2));
-  readToken(process.env)
-    .then((token) =>
+  Promise.all([readToken(process.env), readIcon(defaultBlueprint.icon)])
+    .then(([token, iconDataUri]) =>
       run({
         api: createClient({ token }),
         dryRun: !args.has('--apply'),
         prune: args.has('--prune'),
+        forceIcon: args.has('--force-icon'),
+        iconDataUri,
         log: console.log,
         saveSecrets: saveSecretsFile,
       }),

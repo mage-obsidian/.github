@@ -160,7 +160,6 @@ export function buildReleaseMessage({
 
   return {
     username: 'MageObsidian Releases',
-    avatar_url: `${siteUrl}assets/favicon.png`,
     ...(roleId ? { content: `<@&${roleId}>` } : {}),
     allowed_mentions: { parse: [], roles: roleId ? [roleId] : [] },
     embeds: [

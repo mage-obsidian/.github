@@ -25,7 +25,16 @@ const GUILD = blueprint.guildId;
 const channelIds = Object.fromEntries(
   blueprint.channels.map((channel, index) => [channel.key, `c${index}`]),
 );
-const roleIds = { maintainer: 'r1', contributor: 'r2', releasePings: 'r3' };
+const roleIds = {
+  maintainer: 'r1',
+  contributor: 'r2',
+  releasePings: 'r3',
+  helpers: 'r4',
+  storeOwner: 'r5',
+  agency: 'r6',
+  extensionDev: 'r7',
+  espanol: 'r8',
+};
 const context = { guildId: GUILD, roleIds, channelIds };
 const desired = (key) => blueprint.channels.find((channel) => channel.key === key);
 
@@ -183,8 +192,56 @@ test('onboarding meets Discord minimums and reuses prompt ids', () => {
   assert.ok(body.default_channel_ids.length >= 7);
   assert.ok(writable.length >= 5);
   assert.equal(body.prompts[0].id, 'p1');
-  assert.deepEqual(body.prompts[0].options[0].role_ids, ['r3']);
-  assert.deepEqual(body.prompts[0].options[1].channel_ids, [channelIds.announcements]);
+  assert.equal(body.prompts[0].single_select, false);
+  assert.deepEqual(body.prompts[0].options[0].role_ids, ['r5']);
+  assert.deepEqual(
+    body.prompts[1].options.map((option) => option.role_ids),
+    [['r3'], ['r4']],
+  );
+  assert.equal(body.prompts[2].single_select, true);
+  assert.deepEqual(body.prompts[2].options[1], {
+    ...body.prompts[2].options[1],
+    role_ids: ['r8'],
+    channel_ids: [channelIds.espanol],
+  });
+  assert.ok(
+    body.prompts.every((prompt) =>
+      prompt.options.every(
+        (option) =>
+          option.title.length <= 50 &&
+          option.description.length <= 100 &&
+          option.role_ids.length + option.channel_ids.length > 0,
+      ),
+    ),
+  );
+});
+
+test('managed bot roles are found by name but never created, edited or pruned', () => {
+  const { matched, extras } = matchRoles(
+    [
+      { id: 'auto', name: 'MageObsidian Automation', managed: true },
+      { id: 'fake', name: 'MageObsidian Automation', managed: false },
+    ],
+    blueprint.roles,
+    GUILD,
+  );
+
+  assert.equal(matched.automation.id, 'auto');
+  assert.deepEqual(
+    extras.map((role) => role.id),
+    ['fake'],
+  );
+});
+
+test('overwrites for a role that does not exist yet are left out', () => {
+  const announcements = desired('announcements');
+
+  assert.equal(channelBody(announcements, context).permission_overwrites.length, 1);
+  assert.equal(
+    channelBody(announcements, { ...context, roleIds: { ...roleIds, automation: 'bot' } })
+      .permission_overwrites.length,
+    2,
+  );
 });
 
 test('automod alerts land in the mod log and spare maintainers', () => {
@@ -255,22 +312,42 @@ test('channel order is judged by sequence, not by absolute positions', () => {
   assert.equal(channelsInOrder(swapped, blueprint.channels, channelIds), false);
 });
 
-test('roles are placed in blueprint order, highest first', () => {
-  const positions = rolePositions(blueprint.roles, roleIds);
-  assert.deepEqual(positions, [
+test('role order is dense, keeps the bot on top and other roles right below it', () => {
+  const current = [
+    { id: GUILD, position: 0 },
+    { id: 'bot', position: 5, managed: true },
+    { id: 'kofi', position: 4, managed: true },
     { id: 'r1', position: 3 },
+    { id: 'r2', position: 1 },
+    { id: 'r3', position: 1 },
+  ];
+  const positions = rolePositions(
+    current,
+    blueprint.roles,
+    { maintainer: 'r1', contributor: 'r2', releasePings: 'r3', automation: 'auto' },
+    {
+      guildId: GUILD,
+      botRoleIds: ['bot'],
+    },
+  );
+
+  assert.deepEqual(positions, [
+    { id: 'bot', position: 6 },
+    { id: 'kofi', position: 5 },
+    { id: 'r1', position: 4 },
+    { id: 'auto', position: 3 },
     { id: 'r2', position: 2 },
     { id: 'r3', position: 1 },
   ]);
 
-  const tied = ['r1', 'r2', 'r3'].map((id) => ({ id, position: 1 }));
+  const descending = ['r1', 'r2', 'r4', 'r3', 'r5', 'r6', 'r7', 'r8'].map((id, index) => ({
+    id,
+    position: 20 - index,
+  }));
+  const swapped = descending.map((role) => (role.id === 'r4' ? { ...role, position: 30 } : role));
+  const tied = descending.map((role) => ({ ...role, position: 1 }));
+
+  assert.equal(rolesInOrder(descending, blueprint.roles, roleIds), true);
+  assert.equal(rolesInOrder(swapped, blueprint.roles, roleIds), false);
   assert.equal(rolesInOrder(tied, blueprint.roles, roleIds), false);
-  assert.equal(
-    rolesInOrder(
-      positions.map((entry) => ({ ...entry, position: entry.position + 5 })),
-      blueprint.roles,
-      roleIds,
-    ),
-    true,
-  );
 });

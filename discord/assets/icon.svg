@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="46%" r="50%">
+      <stop offset="0" stop-color="#7fd6c8" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#7fd6c8" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#7fd6c8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0d0c11"/>
+  <circle cx="256" cy="246" r="240" fill="url(#glow)"/>
+  <g transform="translate(256 256) scale(0.7) translate(-182.5 -257.5)" stroke-linejoin="round">
+    <polygon fill="#8e99a3" stroke="#8e99a3" stroke-width="2" points="40,110 130,55 230,5 225,95 110,160"/>
+    <polygon fill="#a7b3bd" stroke="#a7b3bd" stroke-width="2" points="230,5 335,90 290,200 225,95"/>
+    <polygon fill="#5f6b75" stroke="#5f6b75" stroke-width="2" points="335,90 355,230 350,390 300,260 290,200"/>
+    <polygon fill="#616d77" stroke="#616d77" stroke-width="2" points="110,160 225,95 290,200 300,260 150,290"/>
+    <polygon fill="#93a1ad" stroke="#93a1ad" stroke-width="2" points="10,230 40,110 110,160 150,290 110,330 25,410"/>
+    <polygon fill="#798795" stroke="#798795" stroke-width="2" points="150,290 300,260 350,390 160,360"/>
+    <polygon fill="#78838c" stroke="#78838c" stroke-width="2" points="25,410 110,330 150,290 160,360 190,510 80,490"/>
+    <polygon fill="#505c63" stroke="#505c63" stroke-width="2" points="160,360 350,390 310,470 190,510"/>
+    <polyline fill="none" stroke="#e7edf2" stroke-opacity="0.55" stroke-width="7" stroke-linecap="round" points="44,150 30,250"/>
+  </g>
+</svg>

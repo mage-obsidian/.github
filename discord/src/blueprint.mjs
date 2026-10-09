@@ -1,4 +1,4 @@
-import { HIDDEN, READ_ONLY } from './permissions.mjs';
+import { bits, HIDDEN, Permission, READ_ONLY } from './permissions.mjs';
 
 export const ChannelType = Object.freeze({
   TEXT: 0,
@@ -25,8 +25,28 @@ const SUPPRESS_PREMIUM_SUBSCRIPTIONS = 1 << 1;
 const SUPPRESS_GUILD_REMINDER_NOTIFICATIONS = 1 << 2;
 const REQUIRE_TAG = 1 << 4;
 
+export const AUTOMATION_BOT = 'MageObsidian Automation';
+
+export const HELP_CHECKLIST = [
+  'One question per post, with a tag. Include:',
+  '• Magento or Mage-OS version, and PHP version',
+  "• `composer show 'mage-obsidian/*'` and, from vite/, `pnpm list mage-obsidian`",
+  '• What you ran, what you expected and what happened: the full error text, not a screenshot',
+  '• The output of `bin/magento mage-obsidian:frontend:doctor`',
+].join('\n');
+
+const selfAssigned = (key, name) => ({
+  key,
+  name,
+  color: 0,
+  hoist: false,
+  mentionable: false,
+  permissions: '0',
+});
+
 export const blueprint = {
   guildId: '1312693075293900820',
+  icon: new URL('../assets/icon.png', import.meta.url),
 
   guild: {
     name: 'MageObsidian',
@@ -53,12 +73,21 @@ export const blueprint = {
       mentionable: false,
       permissions: '8',
     },
+    { key: 'automation', managed: AUTOMATION_BOT },
     {
       key: 'contributor',
       name: 'Contributor',
       color: 0xd8d3cb,
       hoist: true,
       mentionable: false,
+      permissions: '0',
+    },
+    {
+      key: 'helpers',
+      name: 'Helpers',
+      color: 0x45a195,
+      hoist: false,
+      mentionable: true,
       permissions: '0',
     },
     {
@@ -69,6 +98,10 @@ export const blueprint = {
       mentionable: true,
       permissions: '0',
     },
+    selfAssigned('storeOwner', 'Store owner'),
+    selfAssigned('agency', 'Agency / freelancer'),
+    selfAssigned('extensionDev', 'Extension developer'),
+    selfAssigned('espanol', 'Español'),
   ],
 
   channels: [
@@ -89,7 +122,10 @@ export const blueprint = {
       adopt: '1312693628757610587',
       topic:
         'Releases and project news, posted automatically. Follow it to get them in your own server.',
-      overwrites: [{ role: '@everyone', deny: READ_ONLY }],
+      overwrites: [
+        { role: '@everyone', deny: READ_ONLY },
+        { role: 'automation', allow: bits(Permission.SEND_MESSAGES) },
+      ],
     },
 
     { key: 'community', name: 'Community', type: ChannelType.CATEGORY },
@@ -129,11 +165,7 @@ export const blueprint = {
       default_forum_layout: 1,
       default_reaction_emoji: { emoji_name: '👍' },
       topic: [
-        'One question per post, with a tag. Include:',
-        '• Magento or Mage-OS version, and PHP version',
-        "• `composer show 'mage-obsidian/*'` and, from vite/, `pnpm list mage-obsidian`",
-        '• What you ran, what you expected and what happened: the full error text, not a screenshot',
-        '• The output of `bin/magento mage-obsidian:frontend:doctor`',
+        HELP_CHECKLIST,
         '',
         'Tag the post ✅ solved once it is. A confirmed bug becomes a GitHub issue; a security problem is reported privately, never here: ' +
           LINKS.security,
@@ -207,19 +239,69 @@ export const blueprint = {
     ],
     prompts: [
       {
-        title: 'Want a ping when a new version ships?',
+        title: 'What brings you to MageObsidian?',
+        singleSelect: false,
         options: [
           {
-            title: 'Yes, ping me on releases',
-            description: 'Gives you the Release pings role.',
+            title: 'I run a store',
+            description: 'Merchant or in-house team.',
+            emoji_name: '🛍️',
+            roles: ['storeOwner'],
+          },
+          {
+            title: 'Agency or freelancer',
+            description: 'You build stores for clients.',
+            emoji_name: '🧑‍💻',
+            roles: ['agency'],
+          },
+          {
+            title: 'I build extensions',
+            description: 'Modules or themes for Magento.',
+            emoji_name: '🧩',
+            roles: ['extensionDev'],
+          },
+          {
+            title: 'Just exploring',
+            description: 'Looking around for now.',
+            emoji_name: '👀',
+            channels: ['general'],
+          },
+        ],
+      },
+      {
+        title: 'Which notifications do you want?',
+        singleSelect: false,
+        options: [
+          {
+            title: 'New releases',
+            description: 'A ping in #announcements when a version ships.',
             emoji_name: '🔔',
             roles: ['releasePings'],
           },
           {
-            title: "No, I'll read #announcements",
-            description: 'You can change this later in Channels & Roles.',
-            emoji_name: '🔕',
-            channels: ['announcements'],
+            title: 'Questions I could answer',
+            description: 'A ping for every new post in #help.',
+            emoji_name: '🛟',
+            roles: ['helpers'],
+          },
+        ],
+      },
+      {
+        title: 'Which language do you prefer?',
+        singleSelect: true,
+        options: [
+          {
+            title: 'English',
+            description: 'Most channels are in English.',
+            emoji_name: '🇬🇧',
+            channels: ['general'],
+          },
+          {
+            title: 'Español',
+            description: 'Charla y ayuda en #español.',
+            emoji_name: '🇪🇸',
+            roles: ['espanol'],
+            channels: ['espanol'],
           },
         ],
       },
@@ -304,7 +386,7 @@ export function welcomeMessage(channelIds) {
           `🛠️ ${channel('contributors')} and ${channel('github-activity')}: working on MageObsidian itself.`,
           `🐞 Found a bug? Open an issue on [framework](${LINKS.frameworkIssues}) or [storefront](${LINKS.storefrontIssues}).`,
           '',
-          'Want a ping on every release? Pick it in **Channels & Roles** at the top of the channel list.',
+          'Pick your roles (release pings, Helpers, language) in **Channels & Roles** at the top of the channel list.',
         ].join('\n'),
       },
     ],

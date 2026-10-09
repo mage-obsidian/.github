@@ -6,9 +6,12 @@ const sameName = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 export function matchRoles(existingRoles, desiredRoles, guildId) {
   const candidates = existingRoles.filter((role) => role.id !== guildId && !role.managed);
+  const managed = existingRoles.filter((role) => role.managed);
   const matched = {};
   for (const desired of desiredRoles) {
-    const found = candidates.find((role) => sameName(role.name, desired.name));
+    const pool = desired.managed ? managed : candidates;
+    const name = desired.managed ?? desired.name;
+    const found = pool.find((role) => sameName(role.name, name));
     if (found) matched[desired.key] = found;
   }
   const used = new Set(Object.values(matched).map((role) => role.id));
@@ -60,12 +63,14 @@ export function matchChannels(existingChannels, desiredChannels) {
 }
 
 export function overwritesFor(desired, { guildId, roleIds }) {
-  return (desired.overwrites ?? []).map((overwrite) => ({
-    id: overwrite.role === '@everyone' ? guildId : roleIds[overwrite.role],
-    type: 0,
-    allow: overwrite.allow ?? '0',
-    deny: overwrite.deny ?? '0',
-  }));
+  return (desired.overwrites ?? [])
+    .map((overwrite) => ({
+      id: overwrite.role === '@everyone' ? guildId : roleIds[overwrite.role],
+      type: 0,
+      allow: overwrite.allow ?? '0',
+      deny: overwrite.deny ?? '0',
+    }))
+    .filter((overwrite) => overwrite.id);
 }
 
 export function forumTags(desired, existing) {
@@ -195,7 +200,7 @@ export function onboardingBody(onboarding, { channelIds, roleIds, existing, newI
         id: current?.id ?? newId(),
         type: 0,
         title: prompt.title,
-        single_select: true,
+        single_select: prompt.singleSelect ?? true,
         required: false,
         in_onboarding: true,
         options: prompt.options.map((option) => {
@@ -287,16 +292,30 @@ export function channelsInOrder(currentChannels, desiredChannels, channelIds) {
   });
 }
 
-export function rolePositions(desiredRoles, roleIds) {
-  return desiredRoles.map((role, index) => ({
-    id: roleIds[role.key],
-    position: desiredRoles.length - index,
-  }));
+export function rolePositions(currentRoles, desiredRoles, roleIds, { guildId, botRoleIds }) {
+  const byPosition = (a, b) => b.position - a.position || String(a.id).localeCompare(String(b.id));
+  const roles = currentRoles.filter((role) => role.id !== guildId).sort(byPosition);
+  const botTop = Math.max(
+    ...roles.filter((role) => botRoleIds.includes(role.id)).map((role) => role.position),
+  );
+  const planned = desiredRoles.map((role) => roleIds[role.key]).filter(Boolean);
+  const plannedSet = new Set(planned);
+
+  const ordered = [
+    ...roles
+      .filter((role) => role.position >= botTop && !plannedSet.has(role.id))
+      .map((role) => role.id),
+    ...roles
+      .filter((role) => role.position < botTop && !plannedSet.has(role.id))
+      .map((role) => role.id),
+    ...planned,
+  ];
+  return ordered.map((id, index) => ({ id, position: ordered.length - index }));
 }
 
 export function rolesInOrder(roles, desiredRoles, roleIds) {
-  const positions = desiredRoles.map(
-    (role) => roles.find((candidate) => candidate.id === roleIds[role.key])?.position,
-  );
+  const positions = desiredRoles
+    .filter((role) => roleIds[role.key])
+    .map((role) => roles.find((candidate) => candidate.id === roleIds[role.key])?.position);
   return positions.every((position, index) => index === 0 || position < positions[index - 1]);
 }
