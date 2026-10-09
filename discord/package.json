@@ -1,0 +1,16 @@
+{
+  "name": "mage-obsidian-discord",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "announce": "node src/announce-release.mjs",
+    "plan": "node src/apply.mjs",
+    "apply": "node src/apply.mjs --apply",
+    "format": "npx --yes prettier@3.9.4 --write .",
+    "format:check": "npx --yes prettier@3.9.4 --check ."
+  }
+}
