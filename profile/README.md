@@ -72,3 +72,14 @@ Full instructions in the [installation guide](https://mage-obsidian.jeanmarcos.d
 - 🐛 Issues on each repository — bug reports with templates
 - 🤝 [Contributing guide](https://mage-obsidian.jeanmarcos.dev/support/)
 - ❤️ [Support the project](https://ko-fi.com/Q5Q816Z9WN)
+
+## Supported by
+
+<a href="https://sansec.io/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mage-obsidian/.github/main/profile/assets/sansec-white.svg">
+    <img src="https://raw.githubusercontent.com/mage-obsidian/.github/main/profile/assets/sansec-black.svg" alt="Sansec" width="180">
+  </picture>
+</a>
+
+[Sansec](https://sansec.io/) supports MageObsidian with an [eComscan](https://sansec.io/ecomscan) license, used to audit the [live demo](https://mage-obsidian-demo.jeanmarcos.dev/) for malware and vulnerabilities.
